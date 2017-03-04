@@ -196,13 +196,14 @@ class CPU(encoding.SerializableComparable):
     serializable_fields = ('model_name', 'frequency', 'count', 'architecture',
                            'flags')
 
-    def __init__(self, model_name, frequency, count, architecture):
+    def __init__(self, model_name, frequency, count, architecture, flags=None):
         self.model_name = model_name
         self.frequency = frequency
         self.count = count
         self.architecture = architecture
         self.flags = flags or []
 
+        
 class Memory(encoding.SerializableComparable):
     serializable_fields = ('total', 'physical_mb')
     # physical = total + kernel binary + reserved space
