@@ -858,20 +858,20 @@ class GenericHardwareManager(HardwareManager):
             out, _e = utils.execute(
                 "ipmitool lan print | grep -e 'IP Address [^S]' "
                 "| awk '{ print $4 }'", shell=True)
-            if out.strip() != '0.0.0.0':
+            if out.strip() and out.strip() != '0.0.0.0':
                 return out.strip()
                 
         except (processutils.ProcessExecutionError, OSError) as e:
             # Not error, because it's normal in virtual environment
-            LOG.warning("Cannot get BMC address: %s" % e)
+            LOG.warning("Cannot get BMC address: %s", e)
                 
-        for channel_id in range(1,10):
+        for channel_id in range(9,0,-1):
             try:
                 out, _e = utils.execute(
-                    "ipmitool lan print " + channel_id + 
+                    "ipmitool lan print " + str(channel_id) + 
                     "| grep -e 'IP Address [^S]' "
                     "| awk '{ print $4 }'", shell=True)
-                if out.strip() != '0.0.0.0':
+                if out.strip() and out.strip() != '0.0.0.0':
                     return out.strip()
                     
             except (processutils.ProcessExecutionError, OSError) as e:
