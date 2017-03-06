@@ -855,32 +855,34 @@ class GenericHardwareManager(HardwareManager):
         utils.try_execute('modprobe', 'ipmi_msghandler')
         utils.try_execute('modprobe', 'ipmi_devintf')
         utils.try_execute('modprobe', 'ipmi_si')
-           
+        
+        bmc_addr_list = []
+        
         try:
             out, _e = utils.execute(
                 "ipmitool lan print | grep -e 'IP Address [^S]' "
                 "| awk '{ print $4 }'", shell=True)
             if out.strip() and out.strip() != '0.0.0.0':
-                return out.strip()
+                bmc_addr_list.append(out.strip())
                 
         except (processutils.ProcessExecutionError, OSError) as e:
             # Not error, because it's normal in virtual environment
             LOG.warning("Cannot get BMC address: %s", e)
                 
-        for channel_id in range(9,0,-1):
+        for channel_id in range(1,15):
             try:
                 out, _e = utils.execute(
                     "ipmitool lan print " + str(channel_id) + 
                     "| grep -e 'IP Address [^S]' "
                     "| awk '{ print $4 }'", shell=True)
                 if out.strip() and out.strip() != '0.0.0.0':
-                    return out.strip()
+                    bmc_addr_list.append(out.strip())
                     
             except (processutils.ProcessExecutionError, OSError) as e:
                 # Not error, because it's normal in virtual environment
                 LOG.warning("Cannot get BMC address: %s, channel_id: %d" % (e, channel_id))
                 
-        return None
+        return list(set(bmc_addr_list))
 
 def _compare_extensions(ext1, ext2):
     mgr1 = ext1.obj
