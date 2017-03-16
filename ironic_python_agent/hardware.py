@@ -662,6 +662,7 @@ class GenericHardwareManager(HardwareManager):
         product_name = None
         serial_number = None
         manufacturer = None
+        asset_tag = None
         try:
             out, _e = utils.execute("dmidecode --type system",
                                     shell=True)
