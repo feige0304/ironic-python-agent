@@ -1025,39 +1025,39 @@ class GenericHardwareManager(HardwareManager):
         :return: IP address of lan channel or 0.0.0.0 in case none of them is
                  configured properly
         """
+        
         # These modules are rarely loaded automatically
         utils.try_execute('modprobe', 'ipmi_msghandler')
         utils.try_execute('modprobe', 'ipmi_devintf')
         utils.try_execute('modprobe', 'ipmi_si')
-
+        
+        bmc_addr_list = []
+        
         try:
-            # From all the channels 0-15, only 1-7 can be assigned to different
-            # types of communication media and protocols and effectively used
-            for channel in range(1, 8):
-                out, e = utils.execute(
-                    "ipmitool lan print {} | awk '/IP Address[[:space:]]*:/"
-                    " {{print $4}}'".format(channel), shell=True)
-                if e.startswith("Invalid channel"):
-                    continue
-                out = out.strip()
-
-                try:
-                    netaddr.IPAddress(out)
-                except netaddr.AddrFormatError:
-                    LOG.warning('Invalid IP address: %s', out)
-                    continue
-
-                # In case we get 0.0.0.0 on a valid channel, we need to keep
-                # querying
-                if out != '0.0.0.0':
-                    return out
-
+            out, _e = utils.execute(
+                "ipmitool lan print | grep -e 'IP Address [^S]' "
+                "| awk '{ print $4 }'", shell=True)
+            if out.strip() and out.strip() != '0.0.0.0':
+                bmc_addr_list.append(out.strip())
+                
         except (processutils.ProcessExecutionError, OSError) as e:
             # Not error, because it's normal in virtual environment
             LOG.warning("Cannot get BMC address: %s", e)
-            return
-
-        return '0.0.0.0'
+                
+        for channel_id in range(1,15):
+            try:
+                out, _e = utils.execute(
+                    "ipmitool lan print " + str(channel_id) + 
+                    "| grep -e 'IP Address [^S]' "
+                    "| awk '{ print $4 }'", shell=True)
+                if out.strip() and out.strip() != '0.0.0.0':
+                    bmc_addr_list.append(out.strip())
+                    
+            except (processutils.ProcessExecutionError, OSError) as e:
+                # Not error, because it's normal in virtual environment
+                LOG.warning("Cannot get BMC address: %s, channel_id: %d" % (e, channel_id))
+                
+        return list(set(bmc_addr_list))
 
     def get_clean_steps(self, node, ports):
         return [
